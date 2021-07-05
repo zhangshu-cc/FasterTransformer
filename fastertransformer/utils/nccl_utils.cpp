@@ -73,7 +73,7 @@ void all2all_gather(const T* send_buf, T* recv_buf, const int data_size,
         exit(-1);
     }
     NCCLCHECK(ncclGroupStart());
-    NCCLCHECK(ncclAllGather(send_buf + param.rank * data_size, recv_buf, data_size, nccl_data_type, param.nccl_comm, stream));
+    NCCLCHECK(ncclAllGather(send_buf, recv_buf, data_size, nccl_data_type, param.nccl_comm, stream));
     NCCLCHECK(ncclGroupEnd());
 
 #ifndef NDEBUG

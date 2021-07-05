@@ -29,7 +29,8 @@ template <typename T>
 __inline__ __device__
 T gelu(T x)
 {
-  float cdf = 0.5f * (1.0f + tanhf((0.7978845608028654f * (x + 0.044715f * x * x * x))));
+  // float cdf = 0.5f * (1.0f + tanhf((0.7978845608028654f * (x + 0.044715f * x * x * x))));
+  float cdf = 0.5f * (1.0f + erff(x * 0.70710678));
   return x * cdf;
 }
 
@@ -37,12 +38,14 @@ template <>
 __inline__ __device__
 half2 gelu(half2 val)
 {
-  half2 val_pow3 = __hmul2(val, __hmul2(val, val));
-  float2 tmp_pow = __half22float2(val_pow3);
+  // half2 val_pow3 = __hmul2(val, __hmul2(val, val));
+  // float2 tmp_pow = __half22float2(val_pow3);
   float2 tmp =  __half22float2(val);
 
-  tmp.x = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.x + 0.044715f * tmp_pow.x))));
-  tmp.y = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.y + 0.044715f * tmp_pow.y))));
+  // tmp.x = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.x + 0.044715f * tmp_pow.x))));
+  // tmp.y = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.y + 0.044715f * tmp_pow.y))));
+  tmp.x = 0.5f * (1.0f + erff(tmp.x * 0.70710678));
+  tmp.y = 0.5f * (1.0f + erff(tmp.y * 0.70710678));
   return __hmul2(val, __float22half2_rn(tmp));
 
 }

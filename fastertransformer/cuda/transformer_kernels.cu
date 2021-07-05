@@ -24,7 +24,8 @@ template <typename T>
 __inline__ __device__
 T gelu(T x)
 {
-  float cdf = 0.5f * (1.0f + tanhf((0.7978845608028654f * (x + 0.044715f * x * x * x))));
+  // float cdf = 0.5f * (1.0f + tanhf((0.7978845608028654f * (x + 0.044715f * x * x * x))));
+  float cdf = 0.5f * (1.0f + erff(x * 0.70710678));
   return x * cdf;
 }
 
@@ -32,12 +33,14 @@ template <>
 __inline__ __device__
 half2 gelu(half2 val)
 {
-  half2 val_pow3 = __hmul2(val, __hmul2(val, val));
-  float2 tmp_pow = __half22float2(val_pow3);
+  // half2 val_pow3 = __hmul2(val, __hmul2(val, val));
+  // float2 tmp_pow = __half22float2(val_pow3);
   float2 tmp =  __half22float2(val);
 
-  tmp.x = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.x + 0.044715f * tmp_pow.x))));
-  tmp.y = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.y + 0.044715f * tmp_pow.y))));
+  // tmp.x = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.x + 0.044715f * tmp_pow.x))));
+  // tmp.y = 0.5f * (1.0f + tanhf((0.7978845608028654f * (tmp.y + 0.044715f * tmp_pow.y))));
+  tmp.x = 0.5f * (1.0f + erff(tmp.x * 0.70710678));
+  tmp.y = 0.5f * (1.0f + erff(tmp.y * 0.70710678));
   return __hmul2(val, __float22half2_rn(tmp));
 
 }
@@ -441,6 +444,7 @@ void add_bias_input_layernorm_2_kernelLauncher(
   add_bias_input_layernorm_2<T><<<grid, block, 0, stream>>>(input, gamma, beta, bias, output, norm_output, m, n); // For gpt-3 
 }
 
+/*
 template <typename T>
 __global__ 
 void add_bias_input(T* output, const T* input, const T* bias, const int m, const int n)
@@ -462,8 +466,25 @@ void add_bias_input_kernelLauncher(T* output, const T* bias, const T* input, con
 {
   dim3 grid(min(m, 65536));
   dim3 block(min(n, 1024));
-  
+
   add_bias_input<<<grid, block, 0, stream>>>(output, input, bias, m, n);
+}
+*/
+
+template <typename T>
+__global__
+void add_bias_input(T* output, const T* input, const T* bias, const int m, const int n) {
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < m * n) {
+        output[tid] = output[tid] + input[tid] +  __ldg(&bias[tid % n]);
+    }
+}
+
+template<typename T>
+void add_bias_input_kernelLauncher(T* output, const T* bias, const T* input, const int m, const int n, cudaStream_t stream) {
+  const int block_size = 1024;
+  const int block_num = (m * n + block_size - 1) / block_size;
+  add_bias_input<<<block_num, block_size, 0, stream>>>(output, input, bias, m, n);
 }
 
 template <typename T>
