@@ -499,7 +499,8 @@ void softmax_kernel_v3(T* qk_buf_, const T* attr_mask, const int batch_size, con
     __shared__ float s_mean, s_max;
     if (qual){
       qk_offset = ((blockIdx.y*head_num + blockIdx.z)*seq_len + seq_id) *seq_len + threadIdx.x;
-      int mask_offset = (blockIdx.y * seq_len + seq_id) * seq_len + threadIdx.x;
+      // int mask_offset = (blockIdx.y * seq_len + seq_id) * seq_len + threadIdx.x;
+      int mask_offset = blockIdx.y * seq_len + threadIdx.x;
 
       float qk = static_cast<float>(qk_buf_[qk_offset]);
       float mask_val = static_cast<float>(__ldg(&attr_mask[mask_offset]));
@@ -551,7 +552,8 @@ void softmax_kernel_v3(half* qk_buf_, const half* attr_mask,
     half2 qk;
     if (qual){ 
       qk_offset = ((((blockIdx.y*head_num + blockIdx.z)*seq_len + seq_id) *seq_len) >> 1) + threadIdx.x;
-      int mask_offset = (((blockIdx.y * seq_len + seq_id) * seq_len) >> 1) + threadIdx.x;
+      // int mask_offset = (((blockIdx.y * seq_len + seq_id) * seq_len) >> 1) + threadIdx.x;
+      int mask_offset = ((blockIdx.y * seq_len) >> 1) + threadIdx.x;
 
       qk = qk_buf_half2Ptr[qk_offset];
       half2 mask_val = __ldg(&attr_mask_half2Ptr[mask_offset]);
